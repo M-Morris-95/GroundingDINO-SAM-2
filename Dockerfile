@@ -1,37 +1,35 @@
-FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-devel
+FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
+ARG DEBIAN_FRONTEND=noninteractive
 
-# Arguments to build Docker Image using CUDA
-ARG USE_CUDA=0
-ARG TORCH_ARCH="7.0;7.5;8.0;8.6"
+ENV CUDA_HOME=/usr/local/cuda \
+     TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0 7.5 8.0 8.6+PTX" \
+     SETUPTOOLS_USE_DISTUTILS=stdlib
 
-ENV AM_I_DOCKER=True
-ENV BUILD_WITH_CUDA="${USE_CUDA}"
-ENV TORCH_CUDA_ARCH_LIST="${TORCH_ARCH}"
-ENV CUDA_HOME=/usr/local/cuda-12.1/
-# Ensure CUDA is correctly set up
-ENV PATH=/usr/local/cuda-12.1/bin:${PATH}
-ENV LD_LIBRARY_PATH=/usr/local/cuda-12.1/lib64:${LD_LIBRARY_PATH}
+RUN conda update conda -y
 
-# Install required packages and specific gcc/g++
-RUN apt-get update && apt-get install --no-install-recommends wget ffmpeg=7:* \
-    libsm6=2:* libxext6=2:* git=1:* nano vim=2:* ninja-build gcc-10 g++-10 -y \
-    && apt-get clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
+# Install libraries in the brand new image. 
+RUN apt-get -y update && apt-get install -y --no-install-recommends \
+         wget \
+         build-essential \
+         git \
+         python3-opencv \
+         ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-ENV CC=gcc-10
-ENV CXX=g++-10
+# Set the working directory for all the subsequent Dockerfile instructions.
+WORKDIR /opt/program
 
-RUN mkdir -p /home/appuser/Grounded-SAM-2
-COPY . /home/appuser/Grounded-SAM-2/
+RUN git clone https://github.com/IDEA-Research/GroundingDINO.git
 
-WORKDIR /home/appuser/Grounded-SAM-2
+RUN mkdir weights ; cd weights ; wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth ; cd ..
 
+RUN conda install -c "nvidia/label/cuda-12.1.1" cuda -y
+ENV CUDA_HOME=$CONDA_PREFIX
 
-# Install essential Python packages
-RUN python -m pip install --upgrade pip setuptools wheel numpy \
-    opencv-python transformers supervision pycocotools addict yapf timm
+ENV PATH=/usr/local/cuda/bin:$PATH
 
-# Install segment_anything package in editable mode
-RUN python -m pip install -e .
+RUN cd GroundingDINO/ && python -m pip install .
 
-# Install grounding dino 
-RUN python -m pip install --no-build-isolation -e grounding_dino
+COPY docker_test.py docker_test.py
+
+CMD [ "python", "docker_test.py" ]

@@ -1,485 +1,370 @@
-# Grounded SAM 2: Ground and Track Anything in Videos
+<div align="center">
+  <img src="./.asset/grounding_dino_logo.png" width="30%">
+</div>
 
-**[IDEA-Research](https://github.com/idea-research)**
+# :sauropod: Grounding DINO 
 
-[Tianhe Ren](https://rentainhe.github.io/), [Shuo Shen](https://github.com/ShuoShenDe)
-
-[[`SAM 2 Paper`](https://arxiv.org/abs/2408.00714)] [[`Grounding DINO Paper`](https://arxiv.org/abs/2303.05499)] [[`Grounding DINO 1.5 Paper`](https://arxiv.org/abs/2405.10300)] [[`DINO-X Paper`](https://arxiv.org/abs/2411.14347)] [[`BibTeX`](#citation)]
-
-[![Video Name](./assets/grounded_sam_2_intro.jpg)](https://github.com/user-attachments/assets/f0fb0022-779a-49fb-8f46-3a18a8b4e893)
-
-## Highlights
-
- Grounded SAM 2 is a foundation model pipeline towards grounding and track anything in Videos with [Grounding DINO](https://arxiv.org/abs/2303.05499), [Grounding DINO 1.5](https://arxiv.org/abs/2405.10300), [Florence-2](https://arxiv.org/abs/2311.06242), [DINO-X](https://arxiv.org/abs/2411.14347) and [SAM 2](https://arxiv.org/abs/2408.00714).
-
-In this repo, we've supported the following demo with **simple implementations**:
-- **Ground and Segment Anything** with Grounding DINO, Grounding DINO 1.5 & 1.6, DINO-X and SAM 2
-- **Ground and Track Anything** with Grounding DINO, Grounding DINO 1.5 & 1.6, DINO-X and SAM 2
-- **Detect, Segment and Track Visualization** based on the powerful [supervision](https://github.com/roboflow/supervision) library.
-
-Grounded SAM 2 does not introduce significant methodological changes compared to [Grounded SAM: Assembling Open-World Models for Diverse Visual Tasks](https://arxiv.org/abs/2401.14159). Both approaches leverage the capabilities of open-world models to address complex visual tasks. Consequently, we try to **simplify the code implementation** in this repository, aiming to enhance user convenience.
-
-## Latest updates
-- **2025.04.20**: Update to `dds-cloudapi-sdk` API V2 version. The V1 version in the original API for `Grounding DINO 1.5` and `DINO-X` has been deprecated, please update to the latest `dds-cloudapi-sdk` by `pip install dds-cloudapi-sdk -U` to use `Grounding DINO 1.5 / 1.6` and `DINO-X` models. Please refer to [dds-cloudapi-sdk](https://github.com/deepdataspace/dds-cloudapi-sdk) and our [API docs](https://cloud.deepdataspace.com/docs) to view more details about the update.
-
-- **2024.12.02**: Support **DINO-X with SAM 2** demos (including object segmentation and tracking), please install the latest version of `dds-cloudapi-sdk==0.3.3` and refer to [Grounded SAM 2 (with DINO-X)](#grounded-sam-2-image-demo-with-dino-x) and [Grounded SAM 2 Video (with DINO-X)](#grounded-sam-2-video-object-tracking-demo-with-custom-video-input-with-dino-x) for more details.
-
-- **2024.10.24**: Support [SAHI (Slicing Aided Hyper Inference)](https://docs.ultralytics.com/guides/sahi-tiled-inference/) on Grounded SAM 2 (with Grounding DINO 1.5) which may be helpful for inferencing high resolution image with dense small objects (e.g. **4K** images).
-
-- **2024.10.10**: Support `SAM-2.1` models, if you want to use `SAM 2.1` model, you need to update to the latest code and reinstall SAM 2 follow [SAM 2.1 Installation](https://github.com/facebookresearch/sam2?tab=readme-ov-file#latest-updates).
-
-- **2024.08.31**: Support `dump json results` in Grounded SAM 2 Image Demos (with Grounding DINO).
-
-- **2024.08.20**: Support **Florence-2 SAM 2 Image Demo** which includes `dense region caption`, `object detection`, `phrase grounding`, and cascaded auto-label pipeline `caption + phrase grounding`.
-
-- **2024.08.09**: Support **Ground and Track New Object** throughout the whole videos. This feature is still under development now. Credits to [Shuo Shen](https://github.com/ShuoShenDe).
-
-- **2024.08.07**: Support **Custom Video Inputs**, users need only submit their video file (e.g. `.mp4` file) with specific text prompts to get an impressive demo videos.
-
-## Contents
-- [Installation](#installation)
-- [Grounded SAM 2 Demos](#grounded-sam-2-demos)
-  - [Grounded SAM 2 Image Demo](#grounded-sam-2-image-demo-with-grounding-dino)
-  - [Grounded SAM 2 Image Demo (with Grounding DINO 1.5 & 1.6)](#grounded-sam-2-image-demo-with-grounding-dino-15--16)
-  - [Grounded SAM 2 Image Demo (with DINO-X)](#grounded-sam-2-image-demo-with-dino-x)
-  - [Grounded SAM 2 with SAHI for High Resolution Image Inference](#sahi-slicing-aided-hyper-inference-with-grounding-dino-15-and-sam-2)
-  - [Automatically Saving Grounding and Segmentation Results](#automatically-saving-grounding-results-image-demo)
-  - [Grounded SAM 2 Video Object Tracking Demo](#grounded-sam-2-video-object-tracking-demo)
-  - [Grounded SAM 2 Video Object Tracking Demo (with Grounding DINO 1.5 & 1.6)](#grounded-sam-2-video-object-tracking-demo-with-grounding-dino-15--16)
-  - [Grounded SAM 2 Video Object Tracking with Custom Video Input (using Grounding DINO)](#grounded-sam-2-video-object-tracking-demo-with-custom-video-input-with-grounding-dino)
-  - [Grounded SAM 2 Video Object Tracking with Custom Video Input (using Grounding DINO 1.5 & 1.6)](#grounded-sam-2-video-object-tracking-demo-with-custom-video-input-with-grounding-dino-15--16)
-  - [Grounded SAM 2 Video Object Tracking Demo (with DINO-X)](#grounded-sam-2-video-object-tracking-demo-with-custom-video-input-with-dino-x)
-  - [Grounded SAM 2 Video Object Tracking with Continues ID (using Grounding DINO)](#grounded-sam-2-video-object-tracking-with-continuous-id-with-grounding-dino)
-- [Grounded SAM 2 Florence-2 Demos](#grounded-sam-2-florence-2-demos)
-  - [Grounded SAM 2 Florence-2 Image Demo](#grounded-sam-2-florence-2-image-demo)
-  - [Grounded SAM 2 Florence-2 Image Auto-Labeling Demo](#grounded-sam-2-florence-2-image-auto-labeling-demo)
-- [Citation](#citation)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/grounding-dino-marrying-dino-with-grounded/zero-shot-object-detection-on-mscoco)](https://paperswithcode.com/sota/zero-shot-object-detection-on-mscoco?p=grounding-dino-marrying-dino-with-grounded) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/grounding-dino-marrying-dino-with-grounded/zero-shot-object-detection-on-odinw)](https://paperswithcode.com/sota/zero-shot-object-detection-on-odinw?p=grounding-dino-marrying-dino-with-grounded) \
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/grounding-dino-marrying-dino-with-grounded/object-detection-on-coco-minival)](https://paperswithcode.com/sota/object-detection-on-coco-minival?p=grounding-dino-marrying-dino-with-grounded) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/grounding-dino-marrying-dino-with-grounded/object-detection-on-coco)](https://paperswithcode.com/sota/object-detection-on-coco?p=grounding-dino-marrying-dino-with-grounded)
 
 
+**[IDEA-CVR, IDEA-Research](https://github.com/IDEA-Research)** 
 
-## Installation
+[Shilong Liu](http://www.lsl.zone/), [Zhaoyang Zeng](https://scholar.google.com/citations?user=U_cvvUwAAAAJ&hl=zh-CN&oi=ao), [Tianhe Ren](https://rentainhe.github.io/), [Feng Li](https://scholar.google.com/citations?user=ybRe9GcAAAAJ&hl=zh-CN), [Hao Zhang](https://scholar.google.com/citations?user=B8hPxMQAAAAJ&hl=zh-CN), [Jie Yang](https://github.com/yangjie-cv), [Chunyuan Li](https://scholar.google.com/citations?user=Zd7WmXUAAAAJ&hl=zh-CN&oi=ao), [Jianwei Yang](https://jwyang.github.io/), [Hang Su](https://scholar.google.com/citations?hl=en&user=dxN1_X0AAAAJ&view_op=list_works&sortby=pubdate), [Jun Zhu](https://scholar.google.com/citations?hl=en&user=axsP38wAAAAJ), [Lei Zhang](https://www.leizhang.org/)<sup>:email:</sup>.
 
-Download the pretrained `SAM 2` checkpoints:
 
+[[`Paper`](https://arxiv.org/abs/2303.05499)] [[`Demo`](https://huggingface.co/spaces/ShilongLiu/Grounding_DINO_demo)] [[`BibTex`](#black_nib-citation)]
+
+
+PyTorch implementation and pretrained models for Grounding DINO. For details, see the paper **[Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection](https://arxiv.org/abs/2303.05499)**.
+
+- 🔥 **[Grounding DINO 1.5](https://github.com/IDEA-Research/Grounding-DINO-1.5-API)** is released now, which is IDEA Research's **Most Capable** Open-World Object Detection Model!
+- 🔥 **[Grounding DINO](https://arxiv.org/abs/2303.05499)** and **[Grounded SAM](https://arxiv.org/abs/2401.14159)** are now supported in Huggingface. For more convenient use, you can refer to [this documentation](https://huggingface.co/docs/transformers/model_doc/grounding-dino)
+
+## :sun_with_face: Helpful Tutorial
+
+- :grapes: [[Read our arXiv Paper](https://arxiv.org/abs/2303.05499)]
+- :apple:  [[Watch our simple introduction video on YouTube](https://youtu.be/wxWDt5UiwY8)]
+- :blossom:   &nbsp;[[Try the Colab Demo](https://colab.research.google.com/github/roboflow-ai/notebooks/blob/main/notebooks/zero-shot-object-detection-with-grounding-dino.ipynb)]
+- :sunflower: [[Try our Official Huggingface Demo](https://huggingface.co/spaces/ShilongLiu/Grounding_DINO_demo)]
+- :maple_leaf: [[Watch the Step by Step Tutorial about GroundingDINO by Roboflow AI](https://youtu.be/cMa77r3YrDk)]
+- :mushroom: [[GroundingDINO: Automated Dataset Annotation and Evaluation by Roboflow AI](https://youtu.be/C4NqaRBz_Kw)]
+- :hibiscus: [[Accelerate Image Annotation with SAM and GroundingDINO by Roboflow AI](https://youtu.be/oEQYStnF2l8)]
+- :white_flower: [[Autodistill: Train YOLOv8 with ZERO Annotations based on Grounding-DINO and Grounded-SAM by Roboflow AI](https://github.com/autodistill/autodistill)]
+
+<!-- Grounding DINO Methods | 
+[![arXiv](https://img.shields.io/badge/arXiv-2303.05499-b31b1b.svg)](https://arxiv.org/abs/2303.05499) 
+[![YouTube](https://badges.aleen42.com/src/youtube.svg)](https://youtu.be/wxWDt5UiwY8) -->
+
+<!-- Grounding DINO Demos |
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/roboflow-ai/notebooks/blob/main/notebooks/zero-shot-object-detection-with-grounding-dino.ipynb) -->
+<!-- [![YouTube](https://badges.aleen42.com/src/youtube.svg)](https://youtu.be/cMa77r3YrDk)
+[![HuggingFace space](https://img.shields.io/badge/🤗-HuggingFace%20Space-cyan.svg)](https://huggingface.co/spaces/ShilongLiu/Grounding_DINO_demo)
+[![YouTube](https://badges.aleen42.com/src/youtube.svg)](https://youtu.be/oEQYStnF2l8)
+[![YouTube](https://badges.aleen42.com/src/youtube.svg)](https://youtu.be/C4NqaRBz_Kw) -->
+
+## :sparkles: Highlight Projects
+
+- [Semantic-SAM: a universal image segmentation model to enable segment and recognize anything at any desired granularity.](https://github.com/UX-Decoder/Semantic-SAM), 
+- [DetGPT: Detect What You Need via Reasoning](https://github.com/OptimalScale/DetGPT)
+- [Grounded-SAM: Marrying Grounding DINO with Segment Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything)
+- [Grounding DINO with Stable Diffusion](demo/image_editing_with_groundingdino_stablediffusion.ipynb)
+- [Grounding DINO with GLIGEN for Controllable Image Editing](demo/image_editing_with_groundingdino_gligen.ipynb)
+- [OpenSeeD: A Simple and Strong Openset Segmentation Model](https://github.com/IDEA-Research/OpenSeeD)
+- [SEEM: Segment Everything Everywhere All at Once](https://github.com/UX-Decoder/Segment-Everything-Everywhere-All-At-Once)
+- [X-GPT: Conversational Visual Agent supported by X-Decoder](https://github.com/microsoft/X-Decoder/tree/xgpt)
+- [GLIGEN: Open-Set Grounded Text-to-Image Generation](https://github.com/gligen/GLIGEN)
+- [LLaVA: Large Language and Vision Assistant](https://github.com/haotian-liu/LLaVA)
+
+<!-- Extensions | [Grounding DINO with Segment Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything); [Grounding DINO with Stable Diffusion](demo/image_editing_with_groundingdino_stablediffusion.ipynb); [Grounding DINO with GLIGEN](demo/image_editing_with_groundingdino_gligen.ipynb)  -->
+
+
+
+<!-- Official PyTorch implementation of [Grounding DINO](https://arxiv.org/abs/2303.05499), a stronger open-set object detector. Code is available now! -->
+
+
+## :bulb: Highlight
+
+- **Open-Set Detection.** Detect **everything** with language!
+- **High Performance.** COCO zero-shot **52.5 AP** (training without COCO data!). COCO fine-tune **63.0 AP**.
+- **Flexible.** Collaboration with Stable Diffusion for Image Editting.
+
+
+
+
+## :fire: News
+- **`2023/07/18`**: We release [Semantic-SAM](https://github.com/UX-Decoder/Semantic-SAM), a universal image segmentation model to enable segment and recognize anything at any desired granularity. **Code** and **checkpoint** are available!
+- **`2023/06/17`**: We provide an example to evaluate Grounding DINO on COCO zero-shot performance.
+- **`2023/04/15`**: Refer to [CV in the Wild Readings](https://github.com/Computer-Vision-in-the-Wild/CVinW_Readings) for those who are interested in open-set recognition!
+- **`2023/04/08`**: We release [demos](demo/image_editing_with_groundingdino_gligen.ipynb) to combine [Grounding DINO](https://arxiv.org/abs/2303.05499) with [GLIGEN](https://github.com/gligen/GLIGEN)  for more controllable image editings.
+- **`2023/04/08`**: We release [demos](demo/image_editing_with_groundingdino_stablediffusion.ipynb) to combine [Grounding DINO](https://arxiv.org/abs/2303.05499) with [Stable Diffusion](https://github.com/Stability-AI/StableDiffusion) for image editings.
+- **`2023/04/06`**: We build a new demo by marrying GroundingDINO with [Segment-Anything](https://github.com/facebookresearch/segment-anything) named **[Grounded-Segment-Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything)** aims to support segmentation in GroundingDINO.
+- **`2023/03/28`**: A YouTube [video](https://youtu.be/cMa77r3YrDk) about Grounding DINO and basic object detection prompt engineering. [[SkalskiP](https://github.com/SkalskiP)]
+- **`2023/03/28`**: Add a [demo](https://huggingface.co/spaces/ShilongLiu/Grounding_DINO_demo) on Hugging Face Space!
+- **`2023/03/27`**: Support CPU-only mode. Now the model can run on machines without GPUs.
+- **`2023/03/25`**: A [demo](https://colab.research.google.com/github/roboflow-ai/notebooks/blob/main/notebooks/zero-shot-object-detection-with-grounding-dino.ipynb) for Grounding DINO is available at Colab. [[SkalskiP](https://github.com/SkalskiP)]
+- **`2023/03/22`**: Code is available Now!
+
+<details open>
+<summary><font size="4">
+Description
+</font></summary>
+ <a href="https://arxiv.org/abs/2303.05499">Paper</a> introduction.
+<img src=".asset/hero_figure.png" alt="ODinW" width="100%">
+Marrying <a href="https://github.com/IDEA-Research/GroundingDINO">Grounding DINO</a> and <a href="https://github.com/gligen/GLIGEN">GLIGEN</a>
+<img src="https://huggingface.co/ShilongLiu/GroundingDINO/resolve/main/GD_GLIGEN.png" alt="gd_gligen" width="100%">
+</details>
+
+## :star: Explanations/Tips for Grounding DINO Inputs and Outputs
+- Grounding DINO accepts an `(image, text)` pair as inputs.
+- It outputs `900` (by default) object boxes. Each box has similarity scores across all input words. (as shown in Figures below.)
+- We defaultly choose the boxes whose highest similarities are higher than a `box_threshold`.
+- We extract the words whose similarities are higher than the `text_threshold` as predicted labels.
+- If you want to obtain objects of specific phrases, like the `dogs` in the sentence `two dogs with a stick.`, you can select the boxes with highest text similarities with `dogs` as final outputs. 
+- Note that each word can be split to **more than one** tokens with different tokenlizers. The number of words in a sentence may not equal to the number of text tokens.
+- We suggest separating different category names with `.` for Grounding DINO.
+![model_explain1](.asset/model_explan1.PNG)
+![model_explain2](.asset/model_explan2.PNG)
+
+## :label: TODO 
+
+- [x] Release inference code and demo.
+- [x] Release checkpoints.
+- [x] Grounding DINO with Stable Diffusion and GLIGEN demos.
+- [ ] Release training codes.
+
+## :hammer_and_wrench: Install 
+
+**Note:**
+
+0. If you have a CUDA environment, please make sure the environment variable `CUDA_HOME` is set. It will be compiled under CPU-only mode if no CUDA available.
+
+Please make sure following the installation steps strictly, otherwise the program may produce: 
 ```bash
-cd checkpoints
-bash download_ckpts.sh
+NameError: name '_C' is not defined
 ```
 
-Download the pretrained `Grounding DINO` checkpoints:
-
+If this happened, please reinstalled the groundingDINO by reclone the git and do all the installation steps again.
+ 
+#### how to check cuda:
 ```bash
-cd gdino_checkpoints
-bash download_ckpts.sh
+echo $CUDA_HOME
+```
+If it print nothing, then it means you haven't set up the path/
+
+Run this so the environment variable will be set under current shell. 
+```bash
+export CUDA_HOME=/path/to/cuda-11.3
 ```
 
-### Installation without docker
+Notice the version of cuda should be aligned with your CUDA runtime, for there might exists multiple cuda at the same time. 
 
-Install PyTorch environment first. We use `python=3.10`, as well as `torch >= 2.3.1`, `torchvision>=0.18.1` and `cuda-12.1` in our environment to run this demo. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended. You can easily install the latest version of PyTorch as follows:
-
-```bash
-pip3 install torch torchvision torchaudio
-```
-
-Since we need the CUDA compilation environment to compile the `Deformable Attention` operator used in Grounding DINO, we need to check whether the CUDA environment variables have been set correctly (which you can refer to [Grounding DINO Installation](https://github.com/IDEA-Research/GroundingDINO?tab=readme-ov-file#hammer_and_wrench-install) for more details). You can set the environment variable manually as follows if you want to build a local GPU environment for Grounding DINO to run Grounded SAM 2:
+If you want to set the CUDA_HOME permanently, store it using:
 
 ```bash
-export CUDA_HOME=/path/to/cuda-12.1/
+echo 'export CUDA_HOME=/path/to/cuda' >> ~/.bashrc
+```
+after that, source the bashrc file and check CUDA_HOME:
+```bash
+source ~/.bashrc
+echo $CUDA_HOME
 ```
 
-Install `Segment Anything 2`:
+In this example, /path/to/cuda-11.3 should be replaced with the path where your CUDA toolkit is installed. You can find this by typing **which nvcc** in your terminal:
+
+For instance, 
+if the output is /usr/local/cuda/bin/nvcc, then:
+```bash
+export CUDA_HOME=/usr/local/cuda
+```
+**Installation:**
+
+1.Clone the GroundingDINO repository from GitHub.
+
+```bash
+git clone https://github.com/IDEA-Research/GroundingDINO.git
+```
+
+2. Change the current directory to the GroundingDINO folder.
+
+```bash
+cd GroundingDINO/
+```
+
+3. Install the required dependencies in the current directory.
 
 ```bash
 pip install -e .
 ```
 
-Install `Grounding DINO`:
+4. Download pre-trained model weights.
 
 ```bash
-pip install --no-build-isolation -e grounding_dino
+mkdir weights
+cd weights
+wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
+cd ..
 ```
 
-### Installation with docker
-Build the Docker image and Run the Docker container:
-
-```
-cd Grounded-SAM-2
-make build-image
-make run
-```
-After executing these commands, you will be inside the Docker environment. The working directory within the container is set to: `/home/appuser/Grounded-SAM-2`
-
-Once inside the Docker environment, you can start the demo by running:
-```
-python grounded_sam2_tracking_demo.py
-```
-
-## Grounded SAM 2 Demos
-### Grounded SAM 2 Image Demo (with Grounding DINO)
-Note that `Grounding DINO` has already been supported in [Huggingface](https://huggingface.co/IDEA-Research/grounding-dino-tiny), so we provide two choices for running `Grounded SAM 2` model:
-- Use huggingface API to inference Grounding DINO (which is simple and clear)
+## :arrow_forward: Demo
+Check your GPU ID (only if you're using a GPU)
 
 ```bash
-python grounded_sam2_hf_model_demo.py
+nvidia-smi
 ```
-
-> [!NOTE]
-> 🚨 If you encounter network issues while using the `HuggingFace` model, you can resolve them by setting the appropriate mirror source as `export HF_ENDPOINT=https://hf-mirror.com`
-
-- Load local pretrained Grounding DINO checkpoint and inference with Grounding DINO original API (make sure you've already downloaded the pretrained checkpoint)
-
+Replace `{GPU ID}`, `image_you_want_to_detect.jpg`, and `"dir you want to save the output"` with appropriate values in the following command
 ```bash
-python grounded_sam2_local_demo.py
+CUDA_VISIBLE_DEVICES={GPU ID} python demo/inference_on_a_image.py \
+-c groundingdino/config/GroundingDINO_SwinT_OGC.py \
+-p weights/groundingdino_swint_ogc.pth \
+-i image_you_want_to_detect.jpg \
+-o "dir you want to save the output" \
+-t "chair"
+ [--cpu-only] # open it for cpu mode
 ```
 
-
-### Grounded SAM 2 Image Demo (with Grounding DINO 1.5 & 1.6)
-
-We've already released our most capable open-set detection model [Grounding DINO 1.5 & 1.6](https://github.com/IDEA-Research/Grounding-DINO-1.5-API), which can be combined with SAM 2 for stronger open-set detection and segmentation capability. You can apply the API token first and run Grounded SAM 2 with Grounding DINO 1.5 as follows:
-
-Install the latest DDS cloudapi:
-
+If you would like to specify the phrases to detect, here is a demo:
 ```bash
-pip install dds-cloudapi-sdk --upgrade
+CUDA_VISIBLE_DEVICES={GPU ID} python demo/inference_on_a_image.py \
+-c groundingdino/config/GroundingDINO_SwinT_OGC.py \
+-p ./groundingdino_swint_ogc.pth \
+-i .asset/cat_dog.jpeg \
+-o logs/1111 \
+-t "There is a cat and a dog in the image ." \
+--token_spans "[[[9, 10], [11, 14]], [[19, 20], [21, 24]]]"
+ [--cpu-only] # open it for cpu mode
 ```
+The token_spans specify the start and end positions of a phrases. For example, the first phrase is `[[9, 10], [11, 14]]`. `"There is a cat and a dog in the image ."[9:10] = 'a'`, `"There is a cat and a dog in the image ."[11:14] = 'cat'`. Hence it refers to the phrase `a cat` . Similarly, the `[[19, 20], [21, 24]]` refers to the phrase `a dog`.
 
-Apply your API token from our official website here: [request API token](https://deepdataspace.com/request_api).
+See the `demo/inference_on_a_image.py` for more details.
 
-```bash
-python grounded_sam2_gd1.5_demo.py
-```
-
-### SAHI (Slicing Aided Hyper Inference) with Grounding DINO 1.5 and SAM 2
-
-If your images are high resolution with dense objects, directly using Grounding DINO 1.5 for inference on the original image may not be the best choice. We support [SAHI (Slicing Aided Hyper Inference)](https://docs.ultralytics.com/guides/sahi-tiled-inference/), which works by first dividing the original image into smaller overlapping patches. Inference is then performed separately on each patch, and the final detection results are merged. This method is highly effective and accuracy for dense and small objects detection in high resolution images.
-
-You can run SAHI inference by setting the following param in [grounded_sam2_gd1.5_demo.py](./grounded_sam2_gd1.5_demo.py):
+**Running with Python:**
 
 ```python
-WITH_SLICE_INFERENCE = True
+from groundingdino.util.inference import load_model, load_image, predict, annotate
+import cv2
+
+model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "weights/groundingdino_swint_ogc.pth")
+IMAGE_PATH = "weights/dog-3.jpeg"
+TEXT_PROMPT = "chair . person . dog ."
+BOX_TRESHOLD = 0.35
+TEXT_TRESHOLD = 0.25
+
+image_source, image = load_image(IMAGE_PATH)
+
+boxes, logits, phrases = predict(
+    model=model,
+    image=image,
+    caption=TEXT_PROMPT,
+    box_threshold=BOX_TRESHOLD,
+    text_threshold=TEXT_TRESHOLD
+)
+
+annotated_frame = annotate(image_source=image_source, boxes=boxes, logits=logits, phrases=phrases)
+cv2.imwrite("annotated_image.jpg", annotated_frame)
 ```
+**Web UI**
 
-The visualization is shown as follows:
+We also provide a demo code to integrate Grounding DINO with Gradio Web UI. See the file `demo/gradio_app.py` for more details.
 
-| Text Prompt | Input Image | Grounded SAM 2 | Grounded SAM 2 with SAHI |
-|:----:|:----:|:----:|:----:|
-| `Person` | ![](https://github.com/IDEA-Research/detrex-storage/blob/main/assets/grounded_sam_2/demo_images/dense%20people.png?raw=true) | ![](https://github.com/IDEA-Research/detrex-storage/blob/main/assets/grounded_sam_2/grounding_dino_1.5_slice_inference/grounded_sam2_annotated_image_with_mask.jpg?raw=true) | ![](https://github.com/IDEA-Research/detrex-storage/blob/main/assets/grounded_sam_2/grounding_dino_1.5_slice_inference/grounded_sam2_annotated_image_with_mask_with_slice_inference.jpg?raw=true) |
+**Notebooks**
 
-- **Notes:** We only support SAHI on Grounding DINO 1.5 because it works better with stronger grounding model which may produce less hallucination results.
+- We release [demos](demo/image_editing_with_groundingdino_gligen.ipynb) to combine [Grounding DINO](https://arxiv.org/abs/2303.05499) with [GLIGEN](https://github.com/gligen/GLIGEN)  for more controllable image editings.
+- We release [demos](demo/image_editing_with_groundingdino_stablediffusion.ipynb) to combine [Grounding DINO](https://arxiv.org/abs/2303.05499) with [Stable Diffusion](https://github.com/Stability-AI/StableDiffusion) for image editings.
 
-### Grounded SAM 2 Image Demo (with DINO-X)
+## COCO Zero-shot Evaluations
 
-We've implemented Grounded SAM 2 with the strongest open-world perception model [DINO-X](https://github.com/IDEA-Research/DINO-X-API) for better open-set detection and segmentation performance. You can apply the API token first and run Grounded SAM 2 with DINO-X as follows:
-
-Install the latest DDS cloudapi:
+We provide an example to evaluate Grounding DINO zero-shot performance on COCO. The results should be **48.5**.
 
 ```bash
-pip install dds-cloudapi-sdk --upgrade
-```
-
-Apply your API token from our official website here: [request API token](https://deepdataspace.com/request_api).
-
-```bash
-python grounded_sam2_dinox_demo.py
-```
-
-### Automatically Saving Grounding Results (Image Demo)
-
-After setting `DUMP_JSON_RESULTS=True` in the following Grounded SAM 2 Image Demos:
-- [grounded_sam2_local_demo.py](./grounded_sam2_local_demo.py)
-- [grounded_sam2_hf_model_demo.py](./grounded_sam2_hf_model_demo.py)
-- [grounded_sam2_gd1.5_demo.py](./grounded_sam2_gd1.5_demo.py)
-- [grounded_sam2_dinox_demo.py](./grounded_sam2_dinox_demo.py)
-
-The `grounding` and `segmentation` results will be automatically saved in the `outputs` dir with the following format:
-
-```python
-{
-    "image_path": "path/to/image.jpg",
-    "annotations": [
-        {
-            "class_name": "class_name",
-            "bbox": [x1, y1, x2, y2],
-            "segmentation": {
-                "size": [h, w],
-                "counts": "rle_encoded_mask"
-            },
-            "score": confidence score
-        }
-    ],
-    "box_format": "xyxy",
-    "img_width": w,
-    "img_height": h
-}
+CUDA_VISIBLE_DEVICES=0 \
+python demo/test_ap_on_coco.py \
+ -c groundingdino/config/GroundingDINO_SwinT_OGC.py \
+ -p weights/groundingdino_swint_ogc.pth \
+ --anno_path /path/to/annoataions/ie/instances_val2017.json \
+ --image_dir /path/to/imagedir/ie/val2017
 ```
 
 
-
-### Grounded SAM 2 Video Object Tracking Demo
-
-Based on the strong tracking capability of SAM 2, we can combined it with Grounding DINO for open-set object segmentation and tracking. You can run the following scripts to get the tracking results with Grounded SAM 2:
-
-```bash
-python grounded_sam2_tracking_demo.py
-```
-
-- The tracking results of each frame will be saved in `./tracking_results`
-- The video will be save as `children_tracking_demo_video.mp4`
-- You can refine this file with different text prompt and video clips yourself to get more tracking results.
-- We only prompt the first video frame with Grounding DINO here for simple usage.
-
-#### Support Various Prompt Type for Tracking
-
-We've supported different types of prompt for Grounded SAM 2 tracking demo:
-
-- **Point Prompt**: In order to **get a stable segmentation results**, we re-use the SAM 2 image predictor to get the prediction mask from each object based on Grounding DINO box outputs, then we **uniformly sample points from the prediction mask** as point prompts for SAM 2 video predictor
-- **Box Prompt**: We directly use the box outputs from Grounding DINO as box prompts for SAM 2 video predictor
-- **Mask Prompt**: We use the SAM 2 mask prediction results based on Grounding DINO box outputs as mask prompt for SAM 2 video predictor.
-
-![Grounded SAM 2 Tracking Pipeline](./assets/g_sam2_tracking_pipeline_vis_new.png)
-
-
-### Grounded SAM 2 Video Object Tracking Demo (with Grounding DINO 1.5 & 1.6)
-
-We've also support video object tracking demo based on our stronger `Grounding DINO 1.5` model and `SAM 2`, you can try the following demo after applying the API keys for running `Grounding DINO 1.5`:
-
-```bash
-python grounded_sam2_tracking_demo_with_gd1.5.py
-```
-
-### Grounded SAM 2 Video Object Tracking Demo with Custom Video Input (with Grounding DINO)
-
-Users can upload their own video file (e.g. `assets/hippopotamus.mp4`) and specify their custom text prompts for grounding and tracking with Grounding DINO and SAM 2 by using the following scripts:
-
-```bash
-python grounded_sam2_tracking_demo_custom_video_input_gd1.0_hf_model.py
-```
-
-If you are not convenient to use huggingface demo, you can also run tracking demo with local grounding dino model with the following scripts:
-
-```bash
-python grounded_sam2_tracking_demo_custom_video_input_gd1.0_local_model.py
-```
-
-### Grounded SAM 2 Video Object Tracking Demo with Custom Video Input (with Grounding DINO 1.5 & 1.6)
-
-Users can upload their own video file (e.g. `assets/hippopotamus.mp4`) and specify their custom text prompts for grounding and tracking with Grounding DINO 1.5 and SAM 2 by using the following scripts:
-
-```bash
-python grounded_sam2_tracking_demo_custom_video_input_gd1.5.py
-```
-
-You can specify the params in this file:
-
-```python
-VIDEO_PATH = "./assets/hippopotamus.mp4"
-TEXT_PROMPT = "hippopotamus."
-OUTPUT_VIDEO_PATH = "./hippopotamus_tracking_demo.mp4"
-API_TOKEN_FOR_GD1_5 = "Your API token" # api token for G-DINO 1.5
-PROMPT_TYPE_FOR_VIDEO = "mask" # using SAM 2 mask prediction as prompt for video predictor
-```
-
-After running our demo code, you can get the tracking results as follows:
-
-[![Video Name](./assets/hippopotamus_seg.jpg)](https://github.com/user-attachments/assets/1fbdc6f4-3e50-4221-9600-98c397beecdf)
-
-And we will automatically save the tracking visualization results in `OUTPUT_VIDEO_PATH`.
-
-> [!WARNING]
-> We initialize the box prompts on the first frame of the input video. If you want to start from different frame, you can refine `ann_frame_idx` by yourself in our code.
-
-### Grounded SAM 2 Video Object Tracking Demo with Custom Video Input (with DINO-X)
-
-Users can upload their own video file (e.g. `assets/hippopotamus.mp4`) and specify their custom text prompts for grounding and tracking with DINO-X and SAM 2 by using the following scripts:
-
-```bash
-python grounded_sam2_tracking_demo_custom_video_input_dinox.py
-```
-
-### Grounded-SAM-2 Video Object Tracking with Continuous ID (with Grounding DINO)
-
-In above demos, we only prompt Grounded SAM 2 in specific frame, which may not be friendly to find new object during the whole video. In this demo, we try to **find new objects** and assign them with new ID across the whole video, this function is **still under develop**. it's not that stable now.
-
-Users can upload their own video files and specify custom text prompts for grounding and tracking using the Grounding DINO and SAM 2 frameworks. To do this, execute the script:
-
-
-```bash 
-python grounded_sam2_tracking_demo_with_continuous_id.py
-```
-
-You can customize various parameters including:
-
-- `text`: The grounding text prompt.
-- `video_dir`: Directory containing the video files.
-- `output_dir`: Directory to save the processed output.
-- `output_video_path`: Path for the output video.
-- `step`: Frame stepping for processing.
-- `box_threshold`: box threshold for groundingdino model
-- `text_threshold`: text threshold for groundingdino model
-Note: This method supports only the mask type of text prompt.
-
-After running our demo code, you can get the tracking results as follows:
-
-[![Video Name](./assets/tracking_car_mask_1.jpg)](https://github.com/user-attachments/assets/d3f91ad0-3d32-43c4-a0dc-0bed661415f4)
-
-If you want to try `Grounding DINO 1.5` model, you can run the following scripts after setting your API token:
-
-```bash
-python grounded_sam2_tracking_demo_with_continuous_id_gd1.5.py
-```
-
-### Grounded-SAM-2 Video Object Tracking with Continuous ID plus Reverse Tracking(with Grounding DINO)
-This method could simply cover the whole lifetime of the object
-```bash
-python grounded_sam2_tracking_demo_with_continuous_id_plus.py
-
-```
-
-## Grounded SAM 2 Florence-2 Demos
-### Grounded SAM 2 Florence-2 Image Demo
-
-In this section, we will explore how to integrate the feature-rich and robust open-source models [Florence-2](https://arxiv.org/abs/2311.06242) and SAM 2 to develop practical applications.
-
-[Florence-2](https://arxiv.org/abs/2311.06242) is a powerful vision foundation model by Microsoft which supports a series of vision tasks by prompting with special `task_prompt` includes but not limited to:
-
-| Task | Task Prompt | Text Input | Task Introduction |
-|:---:|:---:|:---:|:---:|
-| Object Detection | `<OD>` | &#10008; | Detect main objects with single category name |
-| Dense Region Caption | `<DENSE_REGION_CAPTION>` | &#10008; | Detect main objects with short description |
-| Region Proposal | `<REGION_PROPOSAL>` | &#10008; | Generate proposals without category name |
-| Phrase Grounding | `<CAPTION_TO_PHRASE_GROUNDING>` | &#10004; | Ground main objects in image mentioned in caption |
-| Referring Expression Segmentation | `<REFERRING_EXPRESSION_SEGMENTATION>` | &#10004; | Ground the object which is most related to the text input |
-| Open Vocabulary Detection and Segmentation | `<OPEN_VOCABULARY_DETECTION>` | &#10004; | Ground any object with text input |
-
-
-Integrate `Florence-2` with `SAM-2`, we can build a strong vision pipeline to solve complex vision tasks, you can try the following scripts to run the demo:
-
-> [!NOTE]
-> 🚨 If you encounter network issues while using the `HuggingFace` model, you can resolve them by setting the appropriate mirror source as `export HF_ENDPOINT=https://hf-mirror.com`
-
-**Object Detection and Segmentation**
-```bash
-python grounded_sam2_florence2_image_demo.py \
-    --pipeline object_detection_segmentation \
-    --image_path ./notebooks/images/cars.jpg
-```
-
-**Dense Region Caption and Segmentation**
-```bash
-python grounded_sam2_florence2_image_demo.py \
-    --pipeline dense_region_caption_segmentation \
-    --image_path ./notebooks/images/cars.jpg
-```
-
-**Region Proposal and Segmentation**
-```bash
-python grounded_sam2_florence2_image_demo.py \
-    --pipeline region_proposal_segmentation \
-    --image_path ./notebooks/images/cars.jpg
-```
-
-**Phrase Grounding and Segmentation**
-```bash
-python grounded_sam2_florence2_image_demo.py \
-    --pipeline phrase_grounding_segmentation \
-    --image_path ./notebooks/images/cars.jpg \
-    --text_input "The image shows two vintage Chevrolet cars parked side by side, with one being a red convertible and the other a pink sedan, \
-            set against the backdrop of an urban area with a multi-story building and trees. \
-            The cars have Cuban license plates, indicating a location likely in Cuba."
-```
-
-**Referring Expression Segmentation**
-```bash
-python grounded_sam2_florence2_image_demo.py \
-    --pipeline referring_expression_segmentation \
-    --image_path ./notebooks/images/cars.jpg \
-    --text_input "The left red car."
-```
-
-**Open-Vocabulary Detection and Segmentation**
-```bash
-python grounded_sam2_florence2_image_demo.py \
-    --pipeline open_vocabulary_detection_segmentation \
-    --image_path ./notebooks/images/cars.jpg \
-    --text_input "car <and> building"
-```
-- Note that if you want to **detect multiple classes** you should split them with `<and>` in your input text.
-
-
-### Grounded SAM 2 Florence-2 Image Auto-Labeling Demo
-`Florence-2` can be used as a auto image annotator by cascading its caption capability with its grounding capability. 
-
-| Task | Task Prompt | Text Input |
-|:---:|:---:|:---:|
-| Caption + Phrase Grounding | `<CAPTION>` + `<CAPTION_TO_PHRASE_GROUNDING>` | &#10008; |
-| Detailed Caption + Phrase Grounding | `<DETAILED_CAPTION>` + `<CAPTION_TO_PHRASE_GROUNDING>` | &#10008; |
-| More Detailed Caption + Phrase Grounding | `<MORE_DETAILED_CAPTION>` + `<CAPTION_TO_PHRASE_GROUNDING>` | &#10008; |
-
-You can try the following scripts to run these demo:
-
-**Caption to Phrase Grounding**
-```bash
-python grounded_sam2_florence2_autolabel_pipeline.py \
-    --image_path ./notebooks/images/groceries.jpg \
-    --pipeline caption_to_phrase_grounding \
-    --caption_type caption
-```
-
-- You can specify `caption_type` to control the granularity of the caption, if you want a more detailed caption, you can try `--caption_type detailed_caption` or `--caption_type more_detailed_caption`.
-
-### Citation
-
-If you find this project helpful for your research, please consider citing the following BibTeX entry.
-
-```BibTex
-@misc{ravi2024sam2segmentimages,
-      title={SAM 2: Segment Anything in Images and Videos}, 
-      author={Nikhila Ravi and Valentin Gabeur and Yuan-Ting Hu and Ronghang Hu and Chaitanya Ryali and Tengyu Ma and Haitham Khedr and Roman Rädle and Chloe Rolland and Laura Gustafson and Eric Mintun and Junting Pan and Kalyan Vasudev Alwala and Nicolas Carion and Chao-Yuan Wu and Ross Girshick and Piotr Dollár and Christoph Feichtenhofer},
-      year={2024},
-      eprint={2408.00714},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2408.00714}, 
-}
-
+## :luggage: Checkpoints
+
+<!-- insert a table -->
+<table>
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>name</th>
+      <th>backbone</th>
+      <th>Data</th>
+      <th>box AP on COCO</th>
+      <th>Checkpoint</th>
+      <th>Config</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>GroundingDINO-T</td>
+      <td>Swin-T</td>
+      <td>O365,GoldG,Cap4M</td>
+      <td>48.4 (zero-shot) / 57.2 (fine-tune)</td>
+      <td><a href="https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth">GitHub link</a> | <a href="https://huggingface.co/ShilongLiu/GroundingDINO/resolve/main/groundingdino_swint_ogc.pth">HF link</a></td>
+      <td><a href="https://github.com/IDEA-Research/GroundingDINO/blob/main/groundingdino/config/GroundingDINO_SwinT_OGC.py">link</a></td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>GroundingDINO-B</td>
+      <td>Swin-B</td>
+      <td>COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO</td>
+      <td>56.7 </td>
+      <td><a href="https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth">GitHub link</a>  | <a href="https://huggingface.co/ShilongLiu/GroundingDINO/resolve/main/groundingdino_swinb_cogcoor.pth">HF link</a> 
+      <td><a href="https://github.com/IDEA-Research/GroundingDINO/blob/main/groundingdino/config/GroundingDINO_SwinB_cfg.py">link</a></td>
+    </tr>
+  </tbody>
+</table>
+
+## :medal_military: Results
+
+<details open>
+<summary><font size="4">
+COCO Object Detection Results
+</font></summary>
+<img src=".asset/COCO.png" alt="COCO" width="100%">
+</details>
+
+<details open>
+<summary><font size="4">
+ODinW Object Detection Results
+</font></summary>
+<img src=".asset/ODinW.png" alt="ODinW" width="100%">
+</details>
+
+<details open>
+<summary><font size="4">
+Marrying Grounding DINO with <a href="https://github.com/Stability-AI/StableDiffusion">Stable Diffusion</a> for Image Editing
+</font></summary>
+See our example <a href="https://github.com/IDEA-Research/GroundingDINO/blob/main/demo/image_editing_with_groundingdino_stablediffusion.ipynb">notebook</a> for more details.
+<img src=".asset/GD_SD.png" alt="GD_SD" width="100%">
+</details>
+
+
+<details open>
+<summary><font size="4">
+Marrying Grounding DINO with <a href="https://github.com/gligen/GLIGEN">GLIGEN</a> for more Detailed Image Editing.
+</font></summary>
+See our example <a href="https://github.com/IDEA-Research/GroundingDINO/blob/main/demo/image_editing_with_groundingdino_gligen.ipynb">notebook</a> for more details.
+<img src=".asset/GD_GLIGEN.png" alt="GD_GLIGEN" width="100%">
+</details>
+
+## :sauropod: Model: Grounding DINO
+
+Includes: a text backbone, an image backbone, a feature enhancer, a language-guided query selection, and a cross-modality decoder.
+
+![arch](.asset/arch.png)
+
+
+## :hearts: Acknowledgement
+
+Our model is related to [DINO](https://github.com/IDEA-Research/DINO) and [GLIP](https://github.com/microsoft/GLIP). Thanks for their great work!
+
+We also thank great previous work including DETR, Deformable DETR, SMCA, Conditional DETR, Anchor DETR, Dynamic DETR, DAB-DETR, DN-DETR, etc. More related work are available at [Awesome Detection Transformer](https://github.com/IDEACVR/awesome-detection-transformer). A new toolbox [detrex](https://github.com/IDEA-Research/detrex) is available as well.
+
+Thanks [Stable Diffusion](https://github.com/Stability-AI/StableDiffusion) and [GLIGEN](https://github.com/gligen/GLIGEN) for their awesome models.
+
+
+## :black_nib: Citation
+
+If you find our work helpful for your research, please consider citing the following BibTeX entry.   
+
+```bibtex
 @article{liu2023grounding,
   title={Grounding dino: Marrying dino with grounded pre-training for open-set object detection},
   author={Liu, Shilong and Zeng, Zhaoyang and Ren, Tianhe and Li, Feng and Zhang, Hao and Yang, Jie and Li, Chunyuan and Yang, Jianwei and Su, Hang and Zhu, Jun and others},
   journal={arXiv preprint arXiv:2303.05499},
   year={2023}
 }
-
-@misc{ren2024grounding,
-      title={Grounding DINO 1.5: Advance the "Edge" of Open-Set Object Detection}, 
-      author={Tianhe Ren and Qing Jiang and Shilong Liu and Zhaoyang Zeng and Wenlong Liu and Han Gao and Hongjie Huang and Zhengyu Ma and Xiaoke Jiang and Yihao Chen and Yuda Xiong and Hao Zhang and Feng Li and Peijun Tang and Kent Yu and Lei Zhang},
-      year={2024},
-      eprint={2405.10300},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-}
-
-@misc{ren2024grounded,
-      title={Grounded SAM: Assembling Open-World Models for Diverse Visual Tasks}, 
-      author={Tianhe Ren and Shilong Liu and Ailing Zeng and Jing Lin and Kunchang Li and He Cao and Jiayu Chen and Xinyu Huang and Yukang Chen and Feng Yan and Zhaoyang Zeng and Hao Zhang and Feng Li and Jie Yang and Hongyang Li and Qing Jiang and Lei Zhang},
-      year={2024},
-      eprint={2401.14159},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-}
-
-@article{kirillov2023segany,
-  title={Segment Anything}, 
-  author={Kirillov, Alexander and Mintun, Eric and Ravi, Nikhila and Mao, Hanzi and Rolland, Chloe and Gustafson, Laura and Xiao, Tete and Whitehead, Spencer and Berg, Alexander C. and Lo, Wan-Yen and Doll{\'a}r, Piotr and Girshick, Ross},
-  journal={arXiv:2304.02643},
-  year={2023}
-}
-
-@misc{jiang2024trex2,
-      title={T-Rex2: Towards Generic Object Detection via Text-Visual Prompt Synergy}, 
-      author={Qing Jiang and Feng Li and Zhaoyang Zeng and Tianhe Ren and Shilong Liu and Lei Zhang},
-      year={2024},
-      eprint={2403.14610},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-}
 ```
+
+
+
+

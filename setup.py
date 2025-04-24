@@ -1,174 +1,224 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
+# coding=utf-8
+# Copyright 2022 The IDEA Authors. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------------------------------
+# Modified from
+# https://github.com/fundamentalvision/Deformable-DETR/blob/main/models/ops/setup.py
+# https://github.com/facebookresearch/detectron2/blob/main/setup.py
+# https://github.com/open-mmlab/mmdetection/blob/master/setup.py
+# https://github.com/Oneflow-Inc/libai/blob/main/setup.py
+# ------------------------------------------------------------------------------------------------
 
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+import glob
 import os
+import subprocess
 
+import subprocess
+import sys
+
+def install_torch():
+    try:
+        import torch
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "torch"])
+
+# Call the function to ensure torch is installed
+install_torch()
+
+import torch
 from setuptools import find_packages, setup
+from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 
-# Package metadata
-NAME = "SAM-2"
-VERSION = "1.0"
-DESCRIPTION = "SAM 2: Segment Anything in Images and Videos"
-URL = "https://github.com/facebookresearch/sam2"
-AUTHOR = "Meta AI"
-AUTHOR_EMAIL = "segment-anything@meta.com"
-LICENSE = "Apache 2.0"
+# groundingdino version info
+version = "0.1.0"
+package_name = "groundingdino"
+cwd = os.path.dirname(os.path.abspath(__file__))
 
-# Read the contents of README file
-with open("README.md", "r", encoding="utf-8") as f:
-    LONG_DESCRIPTION = f.read()
 
-# Required dependencies
-REQUIRED_PACKAGES = [
-    "torch>=2.3.1",
-    "torchvision>=0.18.1",
-    "numpy>=1.24.4",
-    "tqdm>=4.66.1",
-    "hydra-core>=1.3.2",
-    "iopath>=0.1.10",
-    "pillow>=9.4.0",
-]
+sha = "Unknown"
+try:
+    sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd).decode("ascii").strip()
+except Exception:
+    pass
 
-EXTRA_PACKAGES = {
-    "notebooks": [
-        "matplotlib>=3.9.1",
-        "jupyter>=1.0.0",
-        "opencv-python>=4.7.0",
-        "eva-decord>=0.6.1",
-    ],
-    "interactive-demo": [
-        "Flask>=3.0.3",
-        "Flask-Cors>=5.0.0",
-        "av>=13.0.0",
-        "dataclasses-json>=0.6.7",
-        "eva-decord>=0.6.1",
-        "gunicorn>=23.0.0",
-        "imagesize>=1.4.1",
-        "pycocotools>=2.0.8",
-        "strawberry-graphql>=0.243.0",
-    ],
-    "dev": [
-        "black==24.2.0",
-        "usort==1.0.2",
-        "ufmt==2.0.0b2",
-        "fvcore>=0.1.5.post20221221",
-        "pandas>=2.2.2",
-        "scikit-image>=0.24.0",
-        "tensorboard>=2.17.0",
-        "pycocotools>=2.0.8",
-        "tensordict>=0.5.0",
-        "opencv-python>=4.7.0",
-        "submitit>=1.5.1",
-    ],
-}
 
-# By default, we also build the SAM 2 CUDA extension.
-# You may turn off CUDA build with `export SAM2_BUILD_CUDA=0`.
-BUILD_CUDA = os.getenv("SAM2_BUILD_CUDA", "1") == "1"
-# By default, we allow SAM 2 installation to proceed even with build errors.
-# You may force stopping on errors with `export SAM2_BUILD_ALLOW_ERRORS=0`.
-BUILD_ALLOW_ERRORS = os.getenv("SAM2_BUILD_ALLOW_ERRORS", "1") == "1"
+def write_version_file():
+    version_path = os.path.join(cwd, "groundingdino", "version.py")
+    with open(version_path, "w") as f:
+        f.write(f"__version__ = '{version}'\n")
+        # f.write(f"git_version = {repr(sha)}\n")
 
-# Catch and skip errors during extension building and print a warning message
-# (note that this message only shows up under verbose build mode
-# "pip install -v -e ." or "python setup.py build_ext -v")
-CUDA_ERROR_MSG = (
-    "{}\n\n"
-    "Failed to build the SAM 2 CUDA extension due to the error above. "
-    "You can still use SAM 2 and it's OK to ignore the error above, although some "
-    "post-processing functionality may be limited (which doesn't affect the results in most cases; "
-    "(see https://github.com/facebookresearch/sam2/blob/main/INSTALL.md).\n"
-)
+
+requirements = ["torch", "torchvision"]
+
+torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
 
 
 def get_extensions():
-    if not BUILD_CUDA:
-        return []
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    extensions_dir = os.path.join(this_dir, "groundingdino", "models", "GroundingDINO", "csrc")
 
-    try:
-        from torch.utils.cpp_extension import CUDAExtension
+    main_source = os.path.join(extensions_dir, "vision.cpp")
+    sources = glob.glob(os.path.join(extensions_dir, "**", "*.cpp"))
+    source_cuda = glob.glob(os.path.join(extensions_dir, "**", "*.cu")) + glob.glob(
+        os.path.join(extensions_dir, "*.cu")
+    )
 
-        srcs = ["sam2/csrc/connected_components.cu"]
-        compile_args = {
-            "cxx": [],
-            "nvcc": [
-                "-DCUDA_HAS_FP16=1",
-                "-D__CUDA_NO_HALF_OPERATORS__",
-                "-D__CUDA_NO_HALF_CONVERSIONS__",
-                "-D__CUDA_NO_HALF2_OPERATORS__",
-            ],
-        }
-        ext_modules = [CUDAExtension("sam2._C", srcs, extra_compile_args=compile_args)]
-    except Exception as e:
-        if BUILD_ALLOW_ERRORS:
-            print(CUDA_ERROR_MSG.format(e))
-            ext_modules = []
-        else:
-            raise e
+    sources = [main_source] + sources
+
+    extension = CppExtension
+
+    extra_compile_args = {"cxx": []}
+    define_macros = []
+
+    if CUDA_HOME is not None and (torch.cuda.is_available() or "TORCH_CUDA_ARCH_LIST" in os.environ):
+        print("Compiling with CUDA")
+        extension = CUDAExtension
+        sources += source_cuda
+        define_macros += [("WITH_CUDA", None)]
+        extra_compile_args["nvcc"] = [
+            "-DCUDA_HAS_FP16=1",
+            "-D__CUDA_NO_HALF_OPERATORS__",
+            "-D__CUDA_NO_HALF_CONVERSIONS__",
+            "-D__CUDA_NO_HALF2_OPERATORS__",
+            "-gencode=arch=compute_70,code=sm_70",
+            "-gencode=arch=compute_75,code=sm_75",
+            "-gencode=arch=compute_80,code=sm_80",
+            "-gencode=arch=compute_86,code=sm_86",
+        ]
+    else:
+        print("Compiling without CUDA")
+        define_macros += [("WITH_HIP", None)]
+        extra_compile_args["nvcc"] = []
+        return None
+
+    sources = [os.path.join(extensions_dir, s) for s in sources]
+    include_dirs = [extensions_dir]
+
+    ext_modules = [
+        extension(
+            "groundingdino._C",
+            sources,
+            include_dirs=include_dirs,
+            define_macros=define_macros,
+            extra_compile_args=extra_compile_args,
+        )
+    ]
 
     return ext_modules
 
 
-try:
-    from torch.utils.cpp_extension import BuildExtension
+def parse_requirements(fname="requirements.txt", with_version=True):
+    """Parse the package dependencies listed in a requirements file but strips
+    specific versioning information.
 
-    class BuildExtensionIgnoreErrors(BuildExtension):
+    Args:
+        fname (str): path to requirements file
+        with_version (bool, default=False): if True include version specs
 
-        def finalize_options(self):
-            try:
-                super().finalize_options()
-            except Exception as e:
-                print(CUDA_ERROR_MSG.format(e))
-                self.extensions = []
+    Returns:
+        List[str]: list of requirements items
 
-        def build_extensions(self):
-            try:
-                super().build_extensions()
-            except Exception as e:
-                print(CUDA_ERROR_MSG.format(e))
-                self.extensions = []
+    CommandLine:
+        python -c "import setup; print(setup.parse_requirements())"
+    """
+    import re
+    import sys
+    from os.path import exists
 
-        def get_ext_filename(self, ext_name):
-            try:
-                return super().get_ext_filename(ext_name)
-            except Exception as e:
-                print(CUDA_ERROR_MSG.format(e))
-                self.extensions = []
-                return "_C.so"
+    require_fpath = fname
 
-    cmdclass = {
-        "build_ext": (
-            BuildExtensionIgnoreErrors.with_options(no_python_abi_suffix=True)
-            if BUILD_ALLOW_ERRORS
-            else BuildExtension.with_options(no_python_abi_suffix=True)
-        )
-    }
-except Exception as e:
-    cmdclass = {}
-    if BUILD_ALLOW_ERRORS:
-        print(CUDA_ERROR_MSG.format(e))
-    else:
-        raise e
+    def parse_line(line):
+        """Parse information from a line in a requirements text file."""
+        if line.startswith("-r "):
+            # Allow specifying requirements in other files
+            target = line.split(" ")[1]
+            for info in parse_require_file(target):
+                yield info
+        else:
+            info = {"line": line}
+            if line.startswith("-e "):
+                info["package"] = line.split("#egg=")[1]
+            elif "@git+" in line:
+                info["package"] = line
+            else:
+                # Remove versioning from the package
+                pat = "(" + "|".join([">=", "==", ">"]) + ")"
+                parts = re.split(pat, line, maxsplit=1)
+                parts = [p.strip() for p in parts]
+
+                info["package"] = parts[0]
+                if len(parts) > 1:
+                    op, rest = parts[1:]
+                    if ";" in rest:
+                        # Handle platform specific dependencies
+                        # http://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-platform-specific-dependencies
+                        version, platform_deps = map(str.strip, rest.split(";"))
+                        info["platform_deps"] = platform_deps
+                    else:
+                        version = rest  # NOQA
+                    info["version"] = (op, version)
+            yield info
+
+    def parse_require_file(fpath):
+        with open(fpath, "r") as f:
+            for line in f.readlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    for info in parse_line(line):
+                        yield info
+
+    def gen_packages_items():
+        if exists(require_fpath):
+            for info in parse_require_file(require_fpath):
+                parts = [info["package"]]
+                if with_version and "version" in info:
+                    parts.extend(info["version"])
+                if not sys.version.startswith("3.4"):
+                    # apparently package_deps are broken in 3.4
+                    platform_deps = info.get("platform_deps")
+                    if platform_deps is not None:
+                        parts.append(";" + platform_deps)
+                item = "".join(parts)
+                yield item
+
+    packages = list(gen_packages_items())
+    return packages
 
 
-# Setup configuration
-setup(
-    name=NAME,
-    version=VERSION,
-    description=DESCRIPTION,
-    long_description=LONG_DESCRIPTION,
-    long_description_content_type="text/markdown",
-    url=URL,
-    author=AUTHOR,
-    author_email=AUTHOR_EMAIL,
-    license=LICENSE,
-    packages=find_packages(exclude="notebooks"),
-    include_package_data=True,
-    install_requires=REQUIRED_PACKAGES,
-    extras_require=EXTRA_PACKAGES,
-    python_requires=">=3.10.0",
-    ext_modules=get_extensions(),
-    cmdclass=cmdclass,
-)
+if __name__ == "__main__":
+    print(f"Building wheel {package_name}-{version}")
+
+    with open("LICENSE", "r", encoding="utf-8") as f:
+        license = f.read()
+
+    write_version_file()
+
+    setup(
+        name="groundingdino",
+        version="0.1.0",
+        author="International Digital Economy Academy, Shilong Liu",
+        url="https://github.com/IDEA-Research/GroundingDINO",
+        description="open-set object detector",
+        license=license,
+        # install_requires=parse_requirements("requirements.txt"),
+        packages=find_packages(
+            exclude=(
+                "configs",
+                "tests",
+            )
+        ),
+        ext_modules=get_extensions(),
+        cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
+    )
